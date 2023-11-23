@@ -14,13 +14,15 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("SELECT id,nombre,destinatario,precio,estado,year FROM regalos WHERE idUsuario = ?");
-            $consulta->bindValue(1,$idUsuario);
+            $regalosData = $conexion->usuarios->findOne(["id"=>intval($idUsuario)]);
 
-            $consulta->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_PROPS_LATE, 'Navidad\modelos\Regalo');
-            $consulta->execute();
+            $regalos = [];
 
-            $regalos = $consulta->fetchAll();
+            if(isset($regalosData["regalos"])) {
+                foreach ($regalosData["regalos"] as $regaloInfo) {
+                    array_push($regalos,new Regalo($regaloInfo["id"],$regaloInfo["nombre"],$regaloInfo["destinatario"],$regaloInfo["precio"],$regaloInfo["estado"],$regaloInfo["year"]));
+                }
+            }
 
             $conexionObjet->cerrarConexion();
 

@@ -3,6 +3,7 @@
 namespace Navidad\modelos;
 use \PDO;
 use \PDOException;
+use MongoDB\Client;
 
 class ConexionBaseDeDatos {
 
@@ -10,18 +11,7 @@ class ConexionBaseDeDatos {
 
     public function __construct() {
     
-        $host = 'mariadb:3306'; //La IP del contenedor Mysql, y el puerto interno del contenedor
-    
-            try {
-                if ($this->conexion == null) {
-                    $this->conexion = new PDO("mysql:host=" . $host . ";dbname=" . "navidad", "root", "toor");
-                    $this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    $this->conexion->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-                } 
-                
-            } catch (PDOException $e){
-                echo $e->getMessage();
-            }
+        $this->conexion = (new Client('mongodb://root:toor@mongo1:27017'))->navidad;
         
     }
 

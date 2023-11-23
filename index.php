@@ -1,9 +1,11 @@
 <?php
     namespace Navidad;
 
-use Navidad\controladores\ControladorEnlace;
-use Navidad\controladores\ControladorRegalo;
-use Navidad\controladores\ControladorUsuario;
+    require_once './vendor/autoload.php';
+
+    use Navidad\controladores\ControladorEnlace;
+    use Navidad\controladores\ControladorRegalo;
+    use Navidad\controladores\ControladorUsuario;
 
     //empezar la sesion
     session_start();
