@@ -33,14 +33,22 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("SELECT id,nombre,destinatario,precio,estado,year FROM regalos WHERE idUsuario = ? AND regalos.year = ?");
-            $consulta->bindValue(1,$idUsuario);
-            $consulta->bindValue(2,$year);
+            $match_stage = ['$match' => ['id' => intVal($idUsuario)]];
+            $unwind_stage = ['$unwind' => '$regalos'];
+            $group_stage = ['$group' => ['_id' => '$id', 'max_id' => ['$max' => ['$toInt' => '$regalos.id']]]];
 
-            $consulta->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_PROPS_LATE, 'Navidad\modelos\Regalo');
-            $consulta->execute();
+            $resultado = $conexion->resultados->aggregate([$match_stage, $unwind_stage, $group_stage]);
 
-            $regalos = $consulta->fetchAll();
+            $resultadoArray = $resultado->toArray();
+            var_dump($resultadoArray);
+
+            $regalos = [];
+
+            if(isset($regalosData["regalos"])) {
+                foreach ($regalosData["regalos"] as $regaloInfo) {
+                    array_push($regalos,new Regalo($regaloInfo["id"],$regaloInfo["nombre"],$regaloInfo["destinatario"],$regaloInfo["precio"],$regaloInfo["estado"],$regaloInfo["year"]));
+                }
+            } 
 
             $conexionObjet->cerrarConexion();
 

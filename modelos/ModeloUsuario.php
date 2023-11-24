@@ -12,7 +12,12 @@
 
             $valor = $conexion->usuarios->findOne(["nombre" => $nombre]);
 
-            $usuario = new Usuario($valor["id"],$valor["nombre"],$valor["password"]);
+            $usuario = null;
+
+            if(isset($valor["id"])) {
+                $usuario = new Usuario($valor["id"],$valor["nombre"],$valor["password"]);
+            }
+
 
             $conexionObjet->cerrarConexion();
 
