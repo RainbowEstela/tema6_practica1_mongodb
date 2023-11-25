@@ -14,15 +14,15 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $regalosData = $conexion->usuarios->findOne(["id"=>intval($idUsuario)]);
+            $regalosData = $conexion->regalos->find(["idUsuario"=>intval($idUsuario)]);
 
             $regalos = [];
 
-            if(isset($regalosData["regalos"])) {
-                foreach ($regalosData["regalos"] as $regaloInfo) {
-                    array_push($regalos,new Regalo($regaloInfo["id"],$regaloInfo["nombre"],$regaloInfo["destinatario"],$regaloInfo["precio"],$regaloInfo["estado"],$regaloInfo["year"]));
-                }
+           
+            foreach ($regalosData as $regaloInfo) {
+                array_push($regalos,new Regalo($regaloInfo["id"],$regaloInfo["nombre"],$regaloInfo["destinatario"],$regaloInfo["precio"],$regaloInfo["estado"],$regaloInfo["year"]));
             }
+            
 
             $conexionObjet->cerrarConexion();
 
@@ -33,21 +33,13 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $match_stage = ['$match' => ['id' => intVal($idUsuario)]];
-            $unwind_stage = ['$unwind' => '$regalos'];
-            $group_stage = ['$group' => ['_id' => '$id', 'max_id' => ['$max' => ['$toInt' => '$regalos.id']]]];
 
-            $resultado = $conexion->resultados->aggregate([$match_stage, $unwind_stage, $group_stage]);
-
-            $resultadoArray = $resultado->toArray();
-            var_dump($resultadoArray);
+            $resultado = $conexion->regalos->find(["idUsuario"=>intval($idUsuario),"year"=>intval($year)]);
 
             $regalos = [];
 
-            if(isset($regalosData["regalos"])) {
-                foreach ($regalosData["regalos"] as $regaloInfo) {
-                    array_push($regalos,new Regalo($regaloInfo["id"],$regaloInfo["nombre"],$regaloInfo["destinatario"],$regaloInfo["precio"],$regaloInfo["estado"],$regaloInfo["year"]));
-                }
+            foreach ($resultado as $regaloInfo) {
+                array_push($regalos,new Regalo($regaloInfo["id"],$regaloInfo["nombre"],$regaloInfo["destinatario"],$regaloInfo["precio"],$regaloInfo["estado"],$regaloInfo["year"]));
             } 
 
             $conexionObjet->cerrarConexion();
@@ -63,13 +55,18 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("SELECT id,nombre,destinatario,precio,estado,year FROM regalos WHERE id = ?");
-            $consulta->bindValue(1,$idRegalo);
+            $resultado = $conexion->regalos->findOne(["id"=>intval($idRegalo)]);
 
-            $consulta->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_PROPS_LATE, 'Navidad\modelos\Regalo');
-            $consulta->execute();
+            $regalo = new Regalo();
 
-            $regalo = $consulta->fetch();
+            if(isset($resultado["id"])) {
+                $regalo->setId($resultado["id"]);
+                $regalo->setNombre($resultado["nombre"]);
+                $regalo->setDestinatario($resultado["destinatario"]);
+                $regalo->setPrecio($resultado["precio"]);
+                $regalo->setEstado($resultado["estado"]);
+                $regalo->setYear($resultado["year"]);
+            }
 
             $conexionObjet->cerrarConexion();
 
@@ -85,17 +82,29 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("INSERT INTO `navidad`.`regalos` (`nombre`, `destinatario`, `precio`, `estado`, `year`, `idUsuario`) VALUES (?, ?, ?, ?, ?, ?);");
+            $regaloMayor = $conexion->regalos->findOne(
+                [],
+                [
+                    'sort' => ['id' => -1]
+                ]
+            );
 
-            //bindeo de parametros
-            $consulta->bindValue(1,$nombre);
-            $consulta->bindValue(2,$destinatario);
-            $consulta->bindValue(3,$precio);
-            $consulta->bindValue(4,$estado);
-            $consulta->bindValue(5,$year);
-            $consulta->bindValue(6,$idUsuario);
+            $id = 0;
 
-            $consulta->execute();
+            if(isset($regaloMayor)) {
+                $id = $regaloMayor["id"] + 1;
+            }
+
+            $consulta = $conexion->regalos->insertOne([
+                'id' => intval($id),
+                'nombre' => $nombre,
+                'destinatario' => $destinatario,
+                'precio' => floatval($precio),
+                'estado' => $estado,
+                'year' => intval($year),
+                'idUsuario' => intval($idUsuario)
+            ]);
+
             $conexionObjet->cerrarConexion();
 
         }
@@ -107,17 +116,19 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("UPDATE regalos SET nombre = ?, destinatario = ?, precio = ?, estado = ?, year = ? WHERE id = ?");
-
-            //bindeo de parametros
-            $consulta->bindValue(1,$nombre);
-            $consulta->bindValue(2,$destinatario);
-            $consulta->bindValue(3,$precio);
-            $consulta->bindValue(4,$estado);
-            $consulta->bindValue(5,$year);
-            $consulta->bindValue(6,$id);
-
-            $consulta->execute();
+            $consulta = $conexion->regalos->updateOne(
+                ['id'=>intval($id)],
+                [
+                    '$set' => [
+                        'id' => intval($id),
+                        'nombre' => $nombre,
+                        'destinatario' => $destinatario,
+                        'precio' => floatval($precio),
+                        'estado' => $estado,
+                        'year' => intval($year)
+                    ]
+                ]);
+            
             $conexionObjet->cerrarConexion();
         }
 
@@ -126,11 +137,8 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("DELETE FROM regalos WHERE id = ?");
+            $consulta = $conexion->regalos->deleteOne(['id'=>intval($idRegalo)]);
 
-            $consulta->bindValue(1,$idRegalo);
-
-            $consulta->execute();
             $conexionObjet->cerrarConexion();
         }
     }

@@ -10,30 +10,35 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("SELECT id,nombre,enlace,precio,imagen,prioridad FROM enlaces WHERE idRegalo = ?");
-            $consulta->bindValue(1,$idRegalo);
+            $enlacesData = $conexion->enlaces->find(["idRegalo" => intval($idRegalo)]);
 
-            $consulta->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_PROPS_LATE, 'Navidad\modelos\Enlace');
-            $consulta->execute();
+            $enlaces=[];
 
-            $enlaces = $consulta->fetchAll();
+            foreach($enlacesData as $data) {
+                array_push($enlaces, new Enlace($data["id"],$data["nombre"],$data["enlace"],$data["precio"],$data["imagen"],$data["prioridad"]));
+            }
 
             $conexionObjet->cerrarConexion();
 
             return $enlaces;
         }
 
+        
+
         public static function enlacesRegaloAsc($idRegalo) {
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("SELECT id,nombre,enlace,precio,imagen,prioridad FROM enlaces WHERE idRegalo = ? ORDER BY precio ASC");
-            $consulta->bindValue(1,$idRegalo);
+            $enlacesData = $conexion->enlaces->find(["idRegalo" => intval($idRegalo)],
+            [
+                'sort' => ['precio' => 1]
+            ]);
 
-            $consulta->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_PROPS_LATE, 'Navidad\modelos\Enlace');
-            $consulta->execute();
+            $enlaces=[];
 
-            $enlaces = $consulta->fetchAll();
+            foreach($enlacesData as $data) {
+                array_push($enlaces, new Enlace($data["id"],$data["nombre"],$data["enlace"],$data["precio"],$data["imagen"],$data["prioridad"]));
+            }
 
             $conexionObjet->cerrarConexion();
 
@@ -45,13 +50,16 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("SELECT id,nombre,enlace,precio,imagen,prioridad FROM enlaces WHERE idRegalo = ? ORDER BY precio DESC");
-            $consulta->bindValue(1,$idRegalo);
+            $enlacesData = $conexion->enlaces->find(["idRegalo" => intval($idRegalo)],
+            [
+                'sort' => ['precio' => -1]
+            ]);
 
-            $consulta->setFetchMode(PDO::FETCH_CLASS | PDO::FETCH_PROPS_LATE, 'Navidad\modelos\Enlace');
-            $consulta->execute();
+            $enlaces=[];
 
-            $enlaces = $consulta->fetchAll();
+            foreach($enlacesData as $data) {
+                array_push($enlaces, new Enlace($data["id"],$data["nombre"],$data["enlace"],$data["precio"],$data["imagen"],$data["prioridad"]));
+            }
 
             $conexionObjet->cerrarConexion();
 
@@ -64,17 +72,28 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("INSERT INTO `navidad`.`enlaces` (`nombre`, `enlace`, `precio`, `imagen`, `prioridad`, `idRegalo`) VALUES (?, ?, ?, ?, ?, ?);");
+            $enlaceMayor = $conexion->enlaces->findOne(
+                [],
+                [
+                    'sort' => ['id' => -1]
+                ]
+            );
 
-            //bindeo de parametros
-            $consulta->bindValue(1,$nombre);
-            $consulta->bindValue(2,$enlace);
-            $consulta->bindValue(3,$precio);
-            $consulta->bindValue(4,$imagen);
-            $consulta->bindValue(5,$prioridad);
-            $consulta->bindValue(6,$idRegalo);
+            $id = 0;
 
-            $consulta->execute();
+            if(isset($enlaceMayor)) {
+                $id = $enlaceMayor["id"] + 1;
+            }
+
+            $consulta = $conexion->enlaces->insertOne([
+                'id' => intval($id),
+                'nombre' => $nombre,
+                'enlace' => $enlace,
+                'precio' => floatval($precio),
+                'imagen' => $imagen,
+                'prioridad' => intval($prioridad),
+                'idRegalo' => intval($idRegalo)
+            ]);
             $conexionObjet->cerrarConexion();
 
         }
@@ -83,11 +102,8 @@
             $conexionObjet = new ConexionBaseDeDatos();
             $conexion = $conexionObjet->getConexion();
 
-            $consulta = $conexion->prepare("DELETE FROM enlaces WHERE id = ?");
+            $consulta = $conexion->enlaces->deleteOne(['id'=>intval($idEnlace)]);
 
-            $consulta->bindValue(1,$idEnlace);
-
-            $consulta->execute();
             $conexionObjet->cerrarConexion();
         }
     }
